@@ -1,0 +1,29 @@
+{
+  "name": "drink-water",
+  "productName": "Drink-Water",
+  "version": "1.3.0",
+  "description": "A sleek hydration reminder app.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.hydration.reminder",
+    "files": [
+      "*.html",
+      "*.js",
+      "*.png",
+      "*.mp3",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "Drink-Water.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
+  }
+}

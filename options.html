@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #111; color: #e0e0e0; margin: 0; overflow: hidden; font-size: 12px; }
+        .window-border { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid #333; border-radius: 12px; pointer-events: none; z-index: 10000; }
+        header { position: absolute; top: 0; left: 0; right: 0; height: 35px; display: flex; align-items: center; background: #222; }
+        .drag-handle { flex-grow: 1; height: 100%; -webkit-app-region: drag; }
+        .win-btn { width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; color: #666; -webkit-app-region: no-drag; }
+        .win-btn:hover { background: #e81123; color: #fff; border-top-right-radius: 12px; }
+        main { margin-top: 35px; height: calc(100% - 35px); padding: 15px; overflow-y: auto; scrollbar-width: none; }
+        main::-webkit-scrollbar { display: none; }
+        h2 { margin: 0 0 10px 0; color: #00bcd4; font-size: 18px; }
+        .s-group { background: #1e1e1e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border: 1px solid #2a2a2a; }
+        .s-label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 10px; color: #00bcd4; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 3px; }
+        .s-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; font-size: 12px; }
+        input[type="number"], input[type="text"], select { background: #2a2a2a; color: #fff; border: 1px solid #3d3d3d; padding: 4px 8px; border-radius: 4px; outline: none; }
+        .btn { padding: 8px 20px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none; transition: all 0.2s; }
+        .btn-primary { background-color: #00bcd4; color: #000; }
+        .btn-primary:hover { background-color: #00e5ff; transform: scale(1.02); }
+        .image-preview-box { width: 40px; height: 40px; object-fit: contain; border-radius: 3px; background: #000; }
+    </style>
+</head>
+<body>
+    <div class="window-border"></div>
+    <header>
+        <div class="drag-handle"></div>
+        <div id="close-btn" class="win-btn close">&times;</div>
+    </header>
+    <main>
+        <h2>Settings</h2>
+        <div class="s-group">
+            <span class="s-label">Application</span>
+            <div class="s-row"><span>Startup</span><input type="checkbox" id="autoLaunch"></div>
+            <div class="s-row"><span>Silent Mode</span><input type="checkbox" id="silent"></div>
+            <div class="s-row"><span>Focus Mode</span><input type="checkbox" id="focus"></div>
+            <div class="s-row"><span>Interval (min)</span><input type="number" id="interval" min="1"></div>
+        </div>
+        <div class="s-group">
+            <span class="s-label">Content</span>
+            <div class="s-row"><span>Heading</span><input type="text" id="reminderText"></div>
+            <div class="s-row">
+                <img id="image-preview" class="image-preview-box" src="HYDRATE.png">
+                <button class="btn" style="background:#333;color:#fff;font-size:10px;" id="change-image-btn">Change</button>
+                <button class="btn" style="background:#333;color:#fff;font-size:10px;" id="reset-image-btn">Reset</button>
+            </div>
+        </div>
+        <div class="s-group">
+            <span class="s-label">Sound</span>
+            <div class="s-row">
+                <select id="soundType" style="width: 100%;">
+                    <option value="original">Original Beep</option>
+                    <option value="chime">Modern Chime</option>
+                    <option value="pulse">Soft Pulse</option>
+                    <option value="drop">Water Drop 1</option>
+                    <option value="drop2">Water Drop 2</option>
+                    <option value="drop3">Water Drop 3</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:5px;font-size:11px;" onclick="previewSound()">Preview Sound</button>
+        </div>
+        <button id="test-btn" class="btn" style="width:100%;background:#333;color:#00bcd4;border:1px solid #00bcd4;margin-bottom:8px;">Trigger Test Alert</button>
+        <button id="save-btn" class="btn btn-primary" style="width:100%;height:40px;">Save Changes</button>
+    </main>
+    <script>
+        const { ipcRenderer } = require('electron');
+        let config = ipcRenderer.sendSync('get-config');
+
+        document.getElementById('autoLaunch').checked = config.autoLaunch;
+        document.getElementById('silent').checked = config.silent;
+        document.getElementById('focus').checked = config.focus;
+        document.getElementById('interval').value = config.interval;
+        document.getElementById('reminderText').value = config.reminderText;
+        document.getElementById('image-preview').src = config.image || 'HYDRATE.png';
+        document.getElementById('soundType').value = config.soundType || 'original';
+
+        document.getElementById('close-btn').onclick = () => ipcRenderer.send('close-window');
+        document.getElementById('test-btn').onclick = () => ipcRenderer.send('open-reminder');
+        
+        document.getElementById('change-image-btn').onclick = () => ipcRenderer.send('select-image');
+        document.getElementById('reset-image-btn').onclick = () => { config.image = null; document.getElementById('image-preview').src = 'HYDRATE.png'; };
+
+        function previewSound() {
+            const type = document.getElementById('soundType').value;
+            if (type === 'original') playSynth(440);
+            else if (type === 'chime') playChime();
+            else if (type === 'pulse') playPulse();
+            else new Audio(`${type}.mp3`).play().catch(console.error);
+        }
+
+        function playSynth(f) {
+            const ctx = new AudioContext();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.frequency.value = f;
+            g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            o.start(); o.stop(ctx.currentTime + 0.5);
+        }
+
+        function playChime() {
+            const ctx = new AudioContext();
+            [880, 1108.73].forEach((freq, i) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
+                g.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.1);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.1 + 0.4);
+                o.start(ctx.currentTime + i * 0.1);
+                o.stop(ctx.currentTime + i * 0.1 + 0.4);
+            });
+        }
+
+        function playPulse() {
+            const ctx = new AudioContext();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(220, ctx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3);
+            g.gain.setValueAtTime(0.1, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            o.start(); o.stop(ctx.currentTime + 0.5);
+        }
+
+        document.getElementById('save-btn').onclick = () => {
+            const newConfig = {
+                ...config,
+                autoLaunch: document.getElementById('autoLaunch').checked,
+                silent: document.getElementById('silent').checked,
+                focus: document.getElementById('focus').checked,
+                interval: parseInt(document.getElementById('interval').value) || 20,
+                reminderText: document.getElementById('reminderText').value,
+                soundType: document.getElementById('soundType').value
+            };
+            ipcRenderer.send('save-config', newConfig);
+            ipcRenderer.send('close-window');
+        };
+
+        ipcRenderer.on('selected-image', (event, path) => {
+            if (path) { config.image = path; document.getElementById('image-preview').src = path; }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Initial Setup</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html {
+            height: 100%; width: 100%; margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; border-radius: 12px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white; user-select: none;
+        }
+        .window-border { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; pointer-events: none; z-index: 10000; }
+        header { position: absolute; top: 0; left: 0; right: 0; height: 35px; display: flex; align-items: center; justify-content: space-between; z-index: 9000; background: rgba(0,0,0,0.2); }
+        .drag-handle { flex-grow: 1; height: 100%; -webkit-app-region: drag; }
+        .window-controls { display: flex; height: 100%; }
+        .win-btn { width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: rgba(255,255,255,0.5); -webkit-app-region: no-drag; }
+        .win-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .win-btn.close:hover { background: #e81123; border-top-right-radius: 12px; }
+        main { margin-top: 35px; height: calc(100% - 35px); padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        h1 { margin: 0 0 10px 0; color: #00bcd4; font-size: 24px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); text-align: center; }
+        .btn { padding: 12px 40px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #00bcd4; color: #000; border: none; border-radius: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: all 0.2s ease; }
+        .btn:hover { transform: scale(1.05); background-color: #00e5ff; }
+    </style>
+</head>
+<body>
+    <div class="window-border"></div>
+    <header>
+        <div class="drag-handle"></div>
+        <div class="window-controls">
+            <div id="close-btn" class="win-btn close">&times;</div>
+        </div>
+    </header>
+    <main>
+        <h1>Welcome</h1>
+        <p style="margin-bottom: 20px; color: #ccc;">How often should I remind you?</p>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
+            <input type="number" id="interval" value="20" min="1" style="width: 80px; font-size: 20px; text-align: center; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 10px;"> 
+            <span style="font-size: 18px;">minutes</span>
+        </div>
+        <button id="go-btn" class="btn">Start Reminders</button>
+    </main>
+    <script>
+        const { ipcRenderer } = require('electron');
+        document.getElementById('close-btn').onclick = () => ipcRenderer.send('close-window');
+        document.getElementById('go-btn').onclick = () => {
+            const val = parseInt(document.getElementById('interval').value) || 20;
+            ipcRenderer.send('save-config', {
+                interval: val,
+                silent: false,
+                focus: false,
+                autoLaunch: false,
+                reminderText: 'Time to Hydrate!',
+                soundType: 'drop'
+            });
+            ipcRenderer.send('close-window');
+        };
+    </script>
+</body>
+</html>

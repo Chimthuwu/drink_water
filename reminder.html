@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hydration Reminder</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html {
+            height: 100%; width: 100%; margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; border-radius: 12px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white; user-select: none;
+        }
+        .window-border { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; pointer-events: none; z-index: 10000; }
+        header { position: absolute; top: 0; left: 0; right: 0; height: 35px; display: flex; align-items: center; justify-content: space-between; z-index: 9000; background: rgba(0,0,0,0.2); }
+        .drag-handle { flex-grow: 1; height: 100%; -webkit-app-region: drag; }
+        .window-controls { display: flex; height: 100%; }
+        .win-btn { width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: rgba(255,255,255,0.5); -webkit-app-region: no-drag; }
+        .win-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .win-btn.close:hover { background: #e81123; border-top-right-radius: 12px; }
+        main { margin-top: 35px; height: calc(100% - 35px); padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        h1 { margin: 0 0 10px 0; color: #00bcd4; font-size: 24px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); text-align: center; }
+        #main-image { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; box-shadow: 0 6px 12px rgba(0,0,0,0.4); margin-bottom: 20px; }
+        .btn { padding: 12px 40px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #00bcd4; color: #000; border: none; border-radius: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: all 0.2s ease; }
+        .btn:hover { transform: scale(1.05); background-color: #00e5ff; }
+        .settings-trigger { position: absolute; top: 10px; right: 10px; cursor: pointer; font-size: 20px; opacity: 0.5; transition: all 0.3s; }
+        .settings-trigger:hover { opacity: 1; transform: rotate(90deg); color: #00bcd4; }
+    </style>
+</head>
+<body>
+    <div class="window-border"></div>
+    <header>
+        <div class="drag-handle"></div>
+        <div class="window-controls">
+            <div id="close-btn" class="win-btn close">&times;</div>
+        </div>
+    </header>
+    <main>
+        <div id="settings-btn" class="settings-trigger">&#9881;</div>
+        <h1 id="reminder-text">Time to Hydrate!</h1>
+        <img id="main-image" src="HYDRATE.png" alt="Drink Water!">
+        <button id="drink-btn" class="btn">I've Drank Water</button>
+    </main>
+    <script>
+        const { ipcRenderer } = require('electron');
+        const config = ipcRenderer.sendSync('get-config');
+
+        document.getElementById('reminder-text').innerText = config.reminderText;
+        if (config.image) document.getElementById('main-image').src = config.image;
+
+        document.getElementById('close-btn').onclick = () => ipcRenderer.send('close-window');
+        document.getElementById('settings-btn').onclick = () => ipcRenderer.send('open-options');
+        document.getElementById('drink-btn').onclick = () => ipcRenderer.send('acknowledge');
+
+        // Alert Logic
+        if (!config.silent) {
+            const type = config.soundType || 'original';
+            if (type === 'original') playSynth(440);
+            else if (type === 'chime') playChime();
+            else if (type === 'pulse') playPulse();
+            else {
+                const src = (type === 'custom') ? config.sound : `${type}.mp3`;
+                new Audio(src).play().catch(console.error);
+            }
+        }
+
+        function playSynth(f) {
+            const ctx = new AudioContext();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.frequency.value = f;
+            g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            o.start(); o.stop(ctx.currentTime + 0.5);
+        }
+
+        function playChime() {
+            const ctx = new AudioContext();
+            [880, 1108.73].forEach((freq, i) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
+                g.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.1);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.1 + 0.4);
+                o.start(ctx.currentTime + i * 0.1);
+                o.stop(ctx.currentTime + i * 0.1 + 0.4);
+            });
+        }
+
+        function playPulse() {
+            const ctx = new AudioContext();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(220, ctx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3);
+            g.gain.setValueAtTime(0.1, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            o.start(); o.stop(ctx.currentTime + 0.5);
+        }
+
+        if (config.focus) {
+            document.getElementById('drink-btn').style.display = 'none';
+            setTimeout(() => ipcRenderer.send('acknowledge'), 4000);
+        }
+    </script>
+</body>
+</html>
