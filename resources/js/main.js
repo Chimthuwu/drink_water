@@ -2,17 +2,11 @@ let nextAlarmTime = 0;
 let reminderTimer = null;
 let currentView = "";
 let config = {
-    interval: 20,
-    silent: false,
-    focus: false,
-    sound: null,
-    image: null,
-    autoLaunch: false,
-    reminderText: 'Time to Hydrate!',
-    soundType: 'original'
+    interval: 20, silent: false, focus: false, sound: null, image: null,
+    autoLaunch: false, reminderText: 'Time to Hydrate!', soundType: 'original'
 };
 
-// Persistence functions
+// Persistence Engine
 async function loadConfig() {
     try {
         let data = await Neutralino.storage.getData('config');
@@ -23,18 +17,14 @@ async function loadConfig() {
     }
 }
 
-async function saveConfig(newConfig) {
-    config = newConfig;
-    await Neutralino.storage.setData('config', JSON.stringify(config));
-}
-
-// Timer Engine
 async function startTimer() {
     if (reminderTimer) clearTimeout(reminderTimer);
     await loadConfig();
-    nextAlarmTime = Date.now() + (config.interval * 60 * 1000);
+    const durationMs = config.interval * 60 * 1000;
+    nextAlarmTime = Date.now() + durationMs;
+    // Persist nextAlarmTime in case of reboot/crash
     await Neutralino.storage.setData('nextAlarmTime', nextAlarmTime.toString());
-    reminderTimer = setTimeout(triggerReminder, config.interval * 60 * 1000);
+    reminderTimer = setTimeout(triggerReminder, durationMs);
 }
 
 async function triggerReminder() {
@@ -43,44 +33,48 @@ async function triggerReminder() {
     loadView('reminder.html');
 }
 
-// View Loader (SPA logic)
+// Global SPA Router
 async function loadView(viewName) {
     currentView = viewName;
     const container = document.getElementById('app-container');
+    
+    // Set sizing BEFORE injection to avoid clipping
+    if (viewName === 'options.html') await Neutralino.window.setSize({width: 500, height: 780});
+    else if (viewName === 'status.html') await Neutralino.window.setSize({width: 500, height: 480});
+    else if (viewName === 'reminder.html') await Neutralino.window.setSize({width: 500, height: 600});
+
     try {
         const response = await fetch(viewName);
         const html = await response.text();
-        
-        // Extract only the body content to inject
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const bodyContent = doc.body.innerHTML;
         
-        container.innerHTML = bodyContent;
+        // Clean up previous view scripts if any
+        const oldScripts = document.querySelectorAll('.view-script');
+        oldScripts.forEach(s => s.remove());
 
-        // Manually execute scripts found in the injected HTML
+        container.innerHTML = doc.body.innerHTML;
+
+        // Manually execute scripts from the view
         const scripts = doc.body.querySelectorAll('script');
         for (const script of scripts) {
             const newScript = document.createElement('script');
-            if (script.src) {
-                // Adjust path for resources
-                newScript.src = script.getAttribute('src');
-            } else {
-                newScript.textContent = script.textContent;
-            }
+            newScript.className = 'view-script'; // Mark for cleanup
+            if (script.src) newScript.src = script.getAttribute('src');
+            else newScript.textContent = script.textContent;
             document.body.appendChild(newScript);
         }
     } catch (e) {
-        console.error("View load failed:", e);
+        console.error("SPA Loader error:", e);
     }
 }
 
-// Initialize Application
+// Initial App Boot
 async function init() {
     Neutralino.init();
     const isFirstRun = await loadConfig();
 
-    // Setup System Tray
+    // Tray Menu (Pure Neutralino)
     let tray = {
         icon: "/resources/icon.png",
         menuItems: [
@@ -96,8 +90,8 @@ async function init() {
     Neutralino.events.on("trayMenuItemClicked", async (event) => {
         switch(event.detail.id) {
             case "show": await triggerReminder(); break;
-            case "status": loadView('status.html'); await Neutralino.window.unhide(); break;
-            case "settings": loadView('options.html'); await Neutralino.window.unhide(); break;
+            case "status": await loadView('status.html'); await Neutralino.window.unhide(); break;
+            case "settings": await loadView('options.html'); await Neutralino.window.unhide(); break;
             case "quit": Neutralino.app.exit(); break;
         }
     });
@@ -106,11 +100,14 @@ async function init() {
         Neutralino.window.hide();
     });
 
-    // Expose functions to UI
+    // Expose Internal API to Views
     window.app = {
-        loadView: loadView,
-        startTimer: startTimer,
-        saveConfig: saveConfig,
+        loadView, 
+        startTimer, 
+        saveConfig: async (cfg) => {
+            config = cfg;
+            await Neutralino.storage.setData('config', JSON.stringify(cfg));
+        },
         getConfig: () => config,
         getNextAlarmTime: () => nextAlarmTime
     };

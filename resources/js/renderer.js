@@ -26,7 +26,6 @@
         else if (type === 'chime') playSynthesized(880);
         else if (type === 'pulse') playSynthesized(220);
         else {
-            // FIX: Remove 'resources/' prefix
             const soundSrc = (type === 'custom') ? config.sound : `/${type}.mp3`;
             const audio = new Audio(soundSrc);
             audio.volume = 0.4;

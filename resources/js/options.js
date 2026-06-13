@@ -1,5 +1,5 @@
 (async function() {
-    let config = window.app.getConfig();
+    const config = window.app.getConfig();
 
     const loadValues = () => {
         document.getElementById('autoLaunch').checked = config.autoLaunch || false;
@@ -27,14 +27,13 @@
 
     loadValues();
 
-    // Use Neutralino native dialog for file selection
     window.selectImage = async () => {
         let entries = await Neutralino.os.showOpenDialog('Select Image', {
             filters: [{name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif']}]
         });
-        if (entries.length > 0) {
+        if (entries && entries.length > 0) {
             config.image = entries[0];
-            document.getElementById('image-preview').src = config.image;
+            document.getElementById('image-preview').src = entries[0];
         }
     };
 
@@ -42,7 +41,7 @@
         let entries = await Neutralino.os.showOpenDialog('Select Sound', {
             filters: [{name: 'Audio', extensions: ['mp3', 'wav', 'ogg']}]
         });
-        if (entries.length > 0) {
+        if (entries && entries.length > 0) {
             config.sound = entries[0];
             document.getElementById('sound-name').innerText = entries[0].split(/[\\/]/).pop();
         }
@@ -54,8 +53,7 @@
         else if (type === 'chime') playSynthesized(880);
         else if (type === 'pulse') playSynthesized(220);
         else {
-            // FIX: Paths must be relative to the resources root
-            const soundSrc = (type === 'custom') ? config.sound : `${type}.mp3`;
+            const soundSrc = (type === 'custom') ? config.sound : `/${type}.mp3`;
             const audio = new Audio(soundSrc);
             audio.volume = 0.4;
             audio.play().catch(e => console.error("Sound preview failed:", e));
@@ -79,7 +77,6 @@
         document.getElementById('image-preview').src = 'HYDRATE.png';
     };
 
-    // Save Changes
     document.getElementById('save').onclick = async () => {
         const newConfig = {
             autoLaunch: document.getElementById('autoLaunch').checked,
