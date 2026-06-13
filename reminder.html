@@ -53,15 +53,24 @@
         document.getElementById('settings-btn').onclick = () => ipcRenderer.send('open-options');
         document.getElementById('drink-btn').onclick = () => ipcRenderer.send('acknowledge');
 
-        // Alert Logic
+        // Alert Logic - LOOPING
+        let loopInterval = null;
+
         if (!config.silent) {
             const type = config.soundType || 'original';
-            if (type === 'original') playSynth(440);
-            else if (type === 'chime') playChime();
-            else if (type === 'pulse') playPulse();
-            else {
-                const src = (type === 'custom') ? config.sound : `${type}.mp3`;
-                new Audio(src).play().catch(console.error);
+            if (type === 'original') {
+                playSynth(440);
+                loopInterval = setInterval(() => playSynth(440), 2000);
+            } else if (type === 'chime') {
+                playChime();
+                loopInterval = setInterval(playChime, 3000);
+            } else if (type === 'pulse') {
+                playPulse();
+                loopInterval = setInterval(playPulse, 2000);
+            } else {
+                const audio = new Audio(`${type}.mp3`);
+                audio.loop = true;
+                audio.play().catch(console.error);
             }
         }
 
@@ -107,6 +116,8 @@
             document.getElementById('drink-btn').style.display = 'none';
             setTimeout(() => ipcRenderer.send('acknowledge'), 4000);
         }
+
+        window.onbeforeunload = () => { if (loopInterval) clearInterval(loopInterval); };
     </script>
 </body>
 </html>
