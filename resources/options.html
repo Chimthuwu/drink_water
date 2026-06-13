@@ -1,0 +1,66 @@
+<div id="close-btn">&times;</div>
+<div class="container settings-body">
+    <h2>Settings</h2>
+    
+    <div class="setting-group">
+        <span class="group-label">Application</span>
+        <div class="row">
+            <span>Launch at Startup</span>
+            <input type="checkbox" id="autoLaunch">
+        </div>
+        <div class="row">
+            <span>Silent Mode</span>
+            <input type="checkbox" id="silent">
+        </div>
+        <div class="row">
+            <span>Focus Mode</span>
+            <input type="checkbox" id="focus">
+        </div>
+        <div class="row">
+            <span>Interval (min)</span>
+            <input type="number" id="interval" min="1" max="1440">
+        </div>
+    </div>
+
+    <div class="setting-group">
+        <span class="group-label">Notification Content</span>
+        <div class="row">
+            <span>Heading</span>
+            <input type="text" id="reminderText" placeholder="Time to Hydrate!">
+        </div>
+        <div class="row">
+            <img id="image-preview" class="image-preview-box" src="HYDRATE.png" alt="P">
+            <div style="display: flex; gap: 5px;">
+                <button class="btn" style="padding: 4px 10px; font-size: 10px;" onclick="window.selectImage()">Change</button>
+                <button class="btn" style="padding: 4px 10px; font-size: 10px;" id="clear-image">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="setting-group">
+        <span class="group-label">Sound</span>
+        <div class="row">
+            <select id="soundType" style="width: 120px;">
+                <option value="original">Original Beep</option>
+                <option value="chime">Modern Chime</option>
+                <option value="pulse">Soft Pulse</option>
+                <option value="drop">Water Drop 1</option>
+                <option value="drop2">Water Drop 2</option>
+                <option value="drop3">Water Drop 3</option>
+                <option value="custom">Custom...</option>
+            </select>
+            <button class="btn btn-primary" style="padding: 4px 15px; font-size: 11px;" id="preview-sound">Preview</button>
+        </div>
+        <div id="custom-sound-controls" style="display: none; margin-top: 5px;">
+            <div class="row">
+                <button class="btn" style="padding: 4px 10px; font-size: 10px;" onclick="window.selectSound()">Select File</button>
+                <span id="sound-name" style="font-size: 10px; color: #777;">None</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: right; width: 100%;">
+        <button class="btn btn-primary" id="save" style="padding: 8px 30px;">Save & Close</button>
+    </div>
+</div>
+<script src="js/options.js"></script>

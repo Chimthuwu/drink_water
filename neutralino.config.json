@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
+  "applicationId": "com.hydration.reminder",
+  "version": "1.1.5",
+  "defaultMode": "window",
+  "port": 0,
+  "documentRoot": "/resources/",
+  "url": "/",
+  "enableServer": true,
+  "enableNativeAPI": true,
+  "tokenSecurity": "one-time",
+  "logging": {
+    "enabled": false
+  },
+  "nativeAllowList": [
+    "app.*",
+    "os.*",
+    "window.*",
+    "storage.*",
+    "filesystem.*"
+  ],
+  "modes": {
+    "window": {
+      "title": "Drink Water",
+      "width": 500,
+      "height": 600,
+      "minWidth": 400,
+      "minHeight": 450,
+      "center": true,
+      "alwaysOnTop": true,
+      "icon": "/resources/icon.png",
+      "enableInspector": false,
+      "borderless": true,
+      "maximize": false,
+      "hidden": false,
+      "resizable": true,
+      "exitProcessOnClose": false
+    }
+  },
+  "cli": {
+    "binaryName": "Drink-Water",
+    "resourcesPath": "/resources/",
+    "clientLibrary": "/resources/js/neutralino.js"
+  }
+}
