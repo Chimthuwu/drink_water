@@ -111,6 +111,7 @@ ipcMain.on('open-options', showOptions);
 ipcMain.on('open-status', showStatus);
 ipcMain.on('open-reminder', showReminder);
 ipcMain.on('acknowledge', () => { if (popupWindow) popupWindow.close(); startTimer(); showStatus(); });
+ipcMain.on('dismiss-reminder', () => { if (popupWindow) popupWindow.close(); startTimer(); });
 ipcMain.on('close-window', (event) => { BrowserWindow.fromWebContents(event.sender).close(); });
 ipcMain.on('minimize-window', (event) => { BrowserWindow.fromWebContents(event.sender).minimize(); });
 

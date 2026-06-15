@@ -49,7 +49,7 @@
         document.getElementById('reminder-text').innerText = config.reminderText;
         if (config.image) document.getElementById('main-image').src = config.image;
 
-        document.getElementById('close-btn').onclick = () => ipcRenderer.send('close-window');
+        document.getElementById('close-btn').onclick = () => ipcRenderer.send('dismiss-reminder');
         document.getElementById('settings-btn').onclick = () => ipcRenderer.send('open-options');
         document.getElementById('drink-btn').onclick = () => ipcRenderer.send('acknowledge');
 
